@@ -19,7 +19,7 @@ definitions:
       provider:
         $ref: '#/definitions/provider'
       creationTime:
-        type: string
+        type: ['string', 'null']
         format: date-time
 
   labels:
