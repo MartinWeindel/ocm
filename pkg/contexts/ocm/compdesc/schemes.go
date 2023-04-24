@@ -6,6 +6,7 @@ package compdesc
 
 import (
 	"sort"
+	"strings"
 
 	metav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/errors"
@@ -53,8 +54,15 @@ func RegisterScheme(scheme Scheme) {
 
 // Decode decodes a component into the given object.
 func Decode(data []byte, opts ...DecodeOption) (*ComponentDescriptor, error) {
-	o := &DecodeOptions{Codec: DefaultYAMLCodec, DisableValidation: true}
+	o := &DecodeOptions{Codec: DefaultYAMLCodec}
 	o.ApplyOptions(opts)
+
+	s := string(data)
+	idx := strings.Index(s, "creationTime: ")
+	if idx > 0 && s[idx+24] == ' ' {
+		s = s[:idx+24] + "T" + s[idx+25:]
+		data = []byte(s)
+	}
 
 	var schemedef struct {
 		Meta       metav1.Metadata `json:"meta"`
