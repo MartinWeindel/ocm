@@ -8,14 +8,11 @@
 package jsonscheme
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/ghodss/yaml"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-var Schema *gojsonschema.Schema
+var Schema *jsonschema.Schema
 
 func init() {
 	dataBytes, err := ResourcesComponentDescriptorOcmV3SchemaYamlBytes()
@@ -23,12 +20,7 @@ func init() {
 		panic(err)
 	}
 
-	data, err := yaml.YAMLToJSON(dataBytes)
-	if err != nil {
-		panic(err)
-	}
-
-	Schema, err = gojsonschema.NewSchema(gojsonschema.NewBytesLoader(data))
+	Schema, err = jsonschema.CompileString("component-descriptor-ocm-v3-schema.yaml", string(dataBytes))
 	if err != nil {
 		panic(err)
 	}
@@ -36,24 +28,10 @@ func init() {
 
 // Validate validates the given data against the component descriptor v2 jsonscheme.
 func Validate(src []byte) error {
-	data, err := yaml.YAMLToJSON(src)
+	data := map[any]any{}
+	err := yaml.Unmarshal(src, data)
 	if err != nil {
 		return err
 	}
-	documentLoader := gojsonschema.NewBytesLoader(data)
-	res, err := Schema.Validate(documentLoader)
-	if err != nil {
-		return err
-	}
-
-	if !res.Valid() {
-		errs := res.Errors()
-		errMsg := errs[0].String()
-		for i := 1; i < len(errs); i++ {
-			errMsg = fmt.Sprintf("%s;%s", errMsg, errs[i].String())
-		}
-		return errors.New(errMsg)
-	}
-
-	return nil
+	return Schema.Validate(data)
 }

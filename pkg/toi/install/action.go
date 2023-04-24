@@ -10,12 +10,11 @@ import (
 	"sort"
 
 	. "github.com/open-component-model/ocm/pkg/finalizer"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/ghodss/yaml"
 	"github.com/mandelsoft/vfs/pkg/osfs"
 	"github.com/mandelsoft/vfs/pkg/vfs"
-	"github.com/xeipuuv/gojsonschema"
-
 	"github.com/open-component-model/ocm/pkg/common"
 	"github.com/open-component-model/ocm/pkg/common/accessio"
 	"github.com/open-component-model/ocm/pkg/common/accessobj"
@@ -40,35 +39,17 @@ import (
 )
 
 func ValidateByScheme(src []byte, schemedata []byte) error {
-	data, err := yaml.YAMLToJSON(src)
-	if err != nil {
-		return errors.Wrapf(err, "converting data to json")
-	}
-	schemedata, err = yaml.YAMLToJSON(schemedata)
-	if err != nil {
-		return errors.Wrapf(err, "converting scheme to json")
-	}
-	documentLoader := gojsonschema.NewBytesLoader(data)
-
-	scheme, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemedata))
+	schema, err := jsonschema.CompileString("schema.yaml", string(schemedata))
 	if err != nil {
 		return errors.Wrapf(err, "invalid scheme")
 	}
-	res, err := scheme.Validate(documentLoader)
+
+	data := map[any]any{}
+	err = yaml.Unmarshal(src, data)
 	if err != nil {
 		return err
 	}
-
-	if !res.Valid() {
-		errs := res.Errors()
-		errMsg := errs[0].String()
-		for i := 1; i < len(errs); i++ {
-			errMsg = fmt.Sprintf("%s;%s", errMsg, errs[i].String())
-		}
-		return errors.New(errMsg)
-	}
-
-	return nil
+	return schema.Validate(data)
 }
 
 type ExecutorContext struct {
