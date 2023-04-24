@@ -53,7 +53,7 @@ func RegisterScheme(scheme Scheme) {
 
 // Decode decodes a component into the given object.
 func Decode(data []byte, opts ...DecodeOption) (*ComponentDescriptor, error) {
-	o := &DecodeOptions{Codec: DefaultYAMLCodec}
+	o := &DecodeOptions{Codec: DefaultYAMLCodec, DisableValidation: true}
 	o.ApplyOptions(opts)
 
 	var schemedef struct {
